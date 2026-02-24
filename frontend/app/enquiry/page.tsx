@@ -132,7 +132,13 @@ export default function EnquiryPage() {
               </button>
 
               <button
-                onClick={() => router.push("/call")}
+                onClick={() =>
+                  router.push(
+                    `/call?store=${encodeURIComponent(store)}&product=${encodeURIComponent(
+                      product,
+                    )}&details=${encodeURIComponent(details)}`,
+                  )
+                }
                 className="w-full py-4 bg-white text-black rounded-2xl font-medium"
               >
                 Proceed

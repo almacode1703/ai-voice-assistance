@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 type Message = {
   role: "assistant" | "user";
@@ -11,6 +12,11 @@ export default function CallPage() {
   const [status, setStatus] = useState("Initializing brain...");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const searchParams = useSearchParams();
+
+  const store = searchParams.get("store");
+  const product = searchParams.get("product");
+  const details = searchParams.get("details");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -19,8 +25,7 @@ export default function CallPage() {
       setMessages([
         {
           role: "assistant",
-          content:
-            "Hello. I am your AI assistant. I will handle your enquiry. Let me begin.",
+          content: `Hello. I am contacting ${store} regarding ${product}. I will gather the required information now.`,
         },
       ]);
     }, 2000);
@@ -53,7 +58,6 @@ export default function CallPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0B0F19]">
-
       {/* Header */}
       <div className="border-b border-white/10 p-4 text-center text-sm text-gray-400">
         {status}
@@ -61,7 +65,6 @@ export default function CallPage() {
 
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6 max-w-3xl w-full mx-auto">
-
         {messages.map((msg, index) => (
           <div
             key={index}
@@ -80,13 +83,11 @@ export default function CallPage() {
             </div>
           </div>
         ))}
-
       </div>
 
       {/* Bottom Control Area */}
       <div className="border-t border-white/10 p-6">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
-
           <input
             type="text"
             value={input}
@@ -104,7 +105,6 @@ export default function CallPage() {
           >
             Send
           </button>
-
         </div>
       </div>
     </div>
