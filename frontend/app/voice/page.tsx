@@ -86,7 +86,12 @@ function VoiceCallContent() {
 
   // Text-to-Speech
   const speakText = (text: string) => {
-    if (!synthRef.current) return;
+    console.log("🔊 AI will speak:", text);
+
+    if (!synthRef.current) {
+      console.error("❌ Speech synthesis not available");
+      return;
+    }
 
     // Cancel any ongoing speech
     synthRef.current.cancel();
@@ -97,16 +102,26 @@ function VoiceCallContent() {
     utterance.volume = 1;
 
     utterance.onstart = () => {
+      console.log("▶️ AI started speaking");
       setAiSpeaking(true);
       setCallState("active");
     };
 
     utterance.onend = () => {
+      console.log("⏹️ AI finished speaking");
       setAiSpeaking(false);
       if (!completed) {
+        console.log("🎤 Will auto-start listening in 500ms...");
         // Start listening after AI finishes speaking
-        setTimeout(() => startListening(), 500);
+        setTimeout(() => {
+          console.log("🎤 Auto-starting listening now...");
+          startListening();
+        }, 500);
       }
+    };
+
+    utterance.onerror = (event) => {
+      console.error("❌ Speech synthesis error:", event);
     };
 
     synthRef.current.speak(utterance);
@@ -114,8 +129,10 @@ function VoiceCallContent() {
 
   // Speech Recognition
   const startListening = () => {
+    console.log("🎤 Starting speech recognition...");
+
     if (!("webkitSpeechRecognition" in window)) {
-      alert("Speech recognition not supported in this browser. Please use Chrome.");
+      alert("Speech recognition not supported in this browser. Please use Chrome or Edge.");
       return;
     }
 
@@ -127,6 +144,7 @@ function VoiceCallContent() {
     recognition.lang = "en-US";
 
     recognition.onstart = () => {
+      console.log("✅ Speech recognition started - You can speak now!");
       setCallState("listening");
       setCurrentTranscript("");
     };
@@ -144,26 +162,46 @@ function VoiceCallContent() {
         }
       }
 
+      console.log("📝 Transcript:", finalTranscript || interimTranscript);
       setCurrentTranscript(finalTranscript || interimTranscript);
 
       if (finalTranscript) {
+        console.log("✅ Final transcript received:", finalTranscript);
         sendMessage(finalTranscript);
       }
     };
 
     recognition.onerror = (event: any) => {
-      console.error("Speech recognition error:", event.error);
+      console.error("❌ Speech recognition error:", event.error);
+      if (event.error === "not-allowed") {
+        alert("Microphone access denied. Please allow microphone access and refresh the page.");
+      } else if (event.error === "no-speech") {
+        console.log("⚠️ No speech detected, restarting...");
+        // Auto-restart if no speech detected
+        setTimeout(() => {
+          if (!completed && callState !== "completed") {
+            startListening();
+          }
+        }, 1000);
+      }
       setCallState("active");
     };
 
     recognition.onend = () => {
+      console.log("🛑 Speech recognition ended");
       if (callState === "listening") {
         setCallState("processing");
       }
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
+
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error("❌ Failed to start recognition:", error);
+      alert("Failed to start microphone. Please check permissions.");
+    }
   };
 
   // Send Message to Backend
@@ -486,7 +524,7 @@ function VoiceCallContent() {
           )}
 
           {/* Call Action Buttons */}
-          <div className="flex gap-6 justify-center">
+          <div className="flex gap-6 justify-center items-center">
             {callState === "idle" && (
               <motion.button
                 onClick={handleStartCall}
@@ -498,6 +536,22 @@ function VoiceCallContent() {
                 transition={{ type: "spring", stiffness: 200 }}
               >
                 <PhoneIcon className="w-10 h-10 text-white" />
+              </motion.button>
+            )}
+
+            {/* Manual Tap to Speak Button (when AI finishes speaking) */}
+            {callState === "active" && !aiSpeaking && (
+              <motion.button
+                onClick={startListening}
+                className="px-8 py-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-2xl gap-3"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 200 }}
+              >
+                <MicrophoneIcon className="w-6 h-6 text-white" />
+                <span className="text-white font-bold text-lg">Tap to Speak</span>
               </motion.button>
             )}
 
