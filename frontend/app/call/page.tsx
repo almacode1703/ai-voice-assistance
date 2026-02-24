@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { gsap } from "gsap";
@@ -27,14 +27,18 @@ function CallPageContent() {
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hasStartedSession = useRef(false);
 
-  // Get URL parameters
-  const store = searchParams.get("store") || "Apple Computers";
-  const product = searchParams.get("product") || "MacBook Pro";
-  const details = searchParams.get("details") || "Display screen repair";
+  // Memoize URL parameters to prevent unnecessary re-renders
+  const sessionParams = useMemo(() => ({
+    store: searchParams.get("store") || "Apple Computers",
+    product: searchParams.get("product") || "MacBook Pro",
+    details: searchParams.get("details") || "Display screen repair",
+  }), [searchParams]);
 
   // GSAP Page Load Animation
   useEffect(() => {
@@ -53,45 +57,51 @@ function CallPageContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Start Session
+  // Start Session - only once
   useEffect(() => {
+    // Prevent multiple session starts
+    if (hasStartedSession.current) return;
+
+    hasStartedSession.current = true;
+
     const startSession = async () => {
       try {
+        console.log("Starting session with:", sessionParams);
+
         const res = await fetch("http://localhost:8000/session/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            store,
-            product,
-            details,
-          }),
+          body: JSON.stringify(sessionParams),
         });
 
         if (!res.ok) {
-          throw new Error("Failed to start session");
+          throw new Error(`Server responded with ${res.status}`);
         }
 
         const data = await res.json();
-        setSessionId(data.session_id);
+        console.log("Session started:", data);
 
+        setSessionId(data.session_id);
         setMessages([
           {
             role: "assistant",
             content: data.assistant_message,
           },
         ]);
+        setIsLoading(false);
       } catch (err) {
         console.error("Session start error:", err);
-        setError("Failed to connect to backend. Please check if the server is running.");
+        setError("Failed to connect to backend. Please check if the server is running on port 8000.");
+        setIsLoading(false);
       }
     };
 
     startSession();
-  }, [store, product, details]);
+  }, []); // Empty dependency array - only run once
 
   // Send Message
   const sendMessage = async () => {
-    if (!input.trim() || !sessionId) return;
+    if (!input.trim() || !sessionId || isTyping) return;
 
     const userMessage = input;
 
@@ -115,6 +125,7 @@ function CallPageContent() {
       }
 
       const data = await res.json();
+      console.log("Message response:", data);
 
       setTimeout(() => {
         setMessages((prev) => [
@@ -156,7 +167,7 @@ function CallPageContent() {
           animate={{ opacity: 1, scale: 1 }}
         >
           <h2 className="text-2xl font-bold text-red-400 mb-4">Connection Error</h2>
-          <p className="text-white">{error}</p>
+          <p className="text-white mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-6 px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-2xl font-bold"
@@ -168,10 +179,32 @@ function CallPageContent() {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <motion.div
+            className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-cyan-500 via-pink-500 to-yellow-500 rounded-3xl flex items-center justify-center"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <SparklesIcon className="w-10 h-10 text-white" />
+          </motion.div>
+          <h2 className="text-2xl font-bold text-white mb-2">Connecting to AI...</h2>
+          <p className="text-gray-400">Please wait</p>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated Background Blobs */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute top-20 left-20 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"
           animate={{
@@ -244,9 +277,9 @@ function CallPageContent() {
               transition={{ delay: 0.3 }}
             >
               {[
-                { color: "bg-cyan-400", label: "cyan" },
-                { color: "bg-pink-400", label: "pink" },
-                { color: "bg-yellow-400", label: "yellow" },
+                { color: "bg-cyan-400" },
+                { color: "bg-pink-400" },
+                { color: "bg-yellow-400" },
               ].map((dot, i) => (
                 <motion.div
                   key={i}
@@ -264,7 +297,7 @@ function CallPageContent() {
           <AnimatePresence mode="popLayout">
             {messages.map((msg, index) => (
               <motion.div
-                key={index}
+                key={`msg-${index}`}
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
@@ -315,6 +348,7 @@ function CallPageContent() {
             {/* Typing Indicator */}
             {isTyping && (
               <motion.div
+                key="typing"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
@@ -361,15 +395,16 @@ function CallPageContent() {
                 placeholder="Type your message..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
                 className="flex-1 px-6 py-4 rounded-2xl bg-white/5 border-2 border-white/20 focus:outline-none focus:border-cyan-400/50 focus:ring-4 focus:ring-cyan-400/20 transition-all duration-300 placeholder-gray-500 text-white text-lg backdrop-blur-xl"
                 whileFocus={{ scale: 1.01 }}
               />
               <motion.button
                 onClick={sendMessage}
-                className="px-10 py-4 bg-gradient-to-r from-cyan-500 via-pink-500 to-yellow-500 text-white rounded-2xl font-bold text-lg shadow-xl flex items-center gap-3"
-                whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(34, 211, 238, 0.6)" }}
-                whileTap={{ scale: 0.95 }}
+                disabled={!input.trim() || isTyping}
+                className="px-10 py-4 bg-gradient-to-r from-cyan-500 via-pink-500 to-yellow-500 text-white rounded-2xl font-bold text-lg shadow-xl flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: input.trim() && !isTyping ? 1.05 : 1, boxShadow: input.trim() && !isTyping ? "0 0 30px rgba(34, 211, 238, 0.6)" : undefined }}
+                whileTap={{ scale: input.trim() && !isTyping ? 0.95 : 1 }}
               >
                 <span>Send</span>
                 <PaperAirplaneIcon className="w-5 h-5" />
@@ -451,7 +486,20 @@ export default function CallPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-white text-2xl">Loading...</div>
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <motion.div
+            className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-cyan-500 via-pink-500 to-yellow-500 rounded-3xl flex items-center justify-center"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <SparklesIcon className="w-10 h-10 text-white" />
+          </motion.div>
+          <h2 className="text-2xl font-bold text-white">Loading...</h2>
+        </motion.div>
       </div>
     }>
       <CallPageContent />
