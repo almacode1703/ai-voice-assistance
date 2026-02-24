@@ -33,6 +33,8 @@ function VoiceCallContent() {
   const [completed, setCompleted] = useState(false);
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [textInput, setTextInput] = useState("");
 
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
@@ -232,18 +234,34 @@ function VoiceCallContent() {
 
     recognition.onerror = (event: any) => {
       console.error("❌ Speech recognition error:", event.error);
+
       if (event.error === "not-allowed") {
         alert("Microphone access denied. Please allow microphone access and refresh the page.");
+        setCallState("active");
       } else if (event.error === "no-speech") {
-        console.log("⚠️ No speech detected, restarting...");
-        // Auto-restart if no speech detected
+        console.log("⚠️ No speech detected, restarting in 1 second...");
         setTimeout(() => {
           if (!completed && callState !== "completed") {
+            console.log("🔄 Restarting speech recognition...");
             startListening();
           }
         }, 1000);
+      } else if (event.error === "network") {
+        console.error("❌ Network error - Speech API unavailable or microphone not working");
+        alert("Cannot connect to speech service or microphone not detected. Please check:\n\n1. Microphone is connected and working\n2. You have internet connection\n3. Browser has microphone permission\n\nTry speaking again or use manual 'Tap to Speak' button.");
+        setCallState("active");
+        // Auto-retry after 2 seconds
+        setTimeout(() => {
+          if (!completed && callState !== "completed") {
+            console.log("🔄 Retrying speech recognition...");
+            startListening();
+          }
+        }, 2000);
+      } else {
+        console.error(`❌ Speech recognition error: ${event.error}`);
+        alert(`Speech recognition error: ${event.error}\n\nPlease try the manual "Tap to Speak" button.`);
+        setCallState("active");
       }
-      setCallState("active");
     };
 
     recognition.onend = () => {
@@ -676,6 +694,59 @@ function VoiceCallContent() {
             </motion.div>
           )}
 
+          {/* Text Input Fallback (when voice fails) */}
+          <AnimatePresence>
+            {showTextInput && callState === "active" && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10"
+              >
+                <p className="text-sm text-gray-400 mb-3">Type your response:</p>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && textInput.trim()) {
+                        sendMessage(textInput);
+                        setTextInput("");
+                        setShowTextInput(false);
+                      }
+                    }}
+                    placeholder="Type your message..."
+                    className="flex-1 px-4 py-3 rounded-xl bg-white/5 border-2 border-white/20 focus:outline-none focus:border-cyan-400/50 focus:ring-4 focus:ring-cyan-400/20 transition-all text-white placeholder-gray-500"
+                    autoFocus
+                  />
+                  <motion.button
+                    onClick={() => {
+                      if (textInput.trim()) {
+                        sendMessage(textInput);
+                        setTextInput("");
+                        setShowTextInput(false);
+                      }
+                    }}
+                    disabled={!textInput.trim()}
+                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={textInput.trim() ? { scale: 1.05 } : {}}
+                    whileTap={textInput.trim() ? { scale: 0.95 } : {}}
+                  >
+                    <PaperAirplaneIcon className="w-5 h-5" />
+                  </motion.button>
+                </div>
+                <motion.button
+                  onClick={() => setShowTextInput(false)}
+                  className="mt-3 text-sm text-gray-400 hover:text-white transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  ← Back to voice
+                </motion.button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Call Action Buttons */}
           <div className="flex gap-6 justify-center items-center">
             {callState === "idle" && (
@@ -693,19 +764,33 @@ function VoiceCallContent() {
             )}
 
             {/* Manual Tap to Speak Button (when AI finishes speaking) */}
-            {callState === "active" && !aiSpeaking && (
-              <motion.button
-                onClick={startListening}
-                className="px-8 py-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-2xl gap-3"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200 }}
-              >
-                <MicrophoneIcon className="w-6 h-6 text-white" />
-                <span className="text-white font-bold text-lg">Tap to Speak</span>
-              </motion.button>
+            {callState === "active" && !aiSpeaking && !showTextInput && (
+              <>
+                <motion.button
+                  onClick={startListening}
+                  className="px-8 py-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-2xl gap-3"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200 }}
+                >
+                  <MicrophoneIcon className="w-6 h-6 text-white" />
+                  <span className="text-white font-bold text-lg">Tap to Speak</span>
+                </motion.button>
+
+                <motion.button
+                  onClick={() => setShowTextInput(true)}
+                  className="px-6 py-4 rounded-2xl bg-white/10 border-2 border-white/20 text-white font-semibold"
+                  whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
+                >
+                  Or Type
+                </motion.button>
+              </>
             )}
 
             {callState !== "idle" && callState !== "completed" && (
