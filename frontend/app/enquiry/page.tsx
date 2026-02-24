@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function EnquiryPage() {
   const [step, setStep] = useState(1);
   const [store, setStore] = useState("");
   const [product, setProduct] = useState("");
   const [details, setDetails] = useState("");
+  const router = useRouter();
 
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
@@ -14,16 +16,13 @@ export default function EnquiryPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
       <div className="w-full max-w-lg bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-10 space-y-8">
-
         <div className="text-center text-sm text-gray-400">
           Step {step} of 4
         </div>
 
         {step === 1 && (
           <div className="space-y-6">
-            <h1 className="text-3xl font-semibold text-center">
-              Store Name
-            </h1>
+            <h1 className="text-3xl font-semibold text-center">Store Name</h1>
 
             <input
               type="text"
@@ -113,9 +112,15 @@ export default function EnquiryPage() {
             <h1 className="text-3xl font-semibold">Review</h1>
 
             <div className="space-y-2 text-gray-300 text-left">
-              <p><strong>Store:</strong> {store}</p>
-              <p><strong>Product:</strong> {product}</p>
-              <p><strong>Details:</strong> {details}</p>
+              <p>
+                <strong>Store:</strong> {store}
+              </p>
+              <p>
+                <strong>Product:</strong> {product}
+              </p>
+              <p>
+                <strong>Details:</strong> {details}
+              </p>
             </div>
 
             <div className="flex gap-4">
@@ -126,7 +131,10 @@ export default function EnquiryPage() {
                 Back
               </button>
 
-              <button className="w-full py-4 bg-white text-black rounded-2xl font-medium">
+              <button
+                onClick={() => router.push("/call")}
+                className="w-full py-4 bg-white text-black rounded-2xl font-medium"
+              >
                 Proceed
               </button>
             </div>
