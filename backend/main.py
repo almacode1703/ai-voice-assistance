@@ -10,10 +10,13 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 # PDF
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+from reportlab.pdfgen import canvas
 
 # --------------------------------------------------
 # Load Environment
@@ -71,41 +74,199 @@ def generate_invoice(session_id: str, session_data: dict):
 
     filename = f"invoices/{session_id}.pdf"
 
-    doc = SimpleDocTemplate(filename, pagesize=A4)
+    # Custom page template with header and footer
+    def add_page_decorations(canvas, doc):
+        canvas.saveState()
+
+        # Header - Gradient-like effect with colored bars
+        canvas.setFillColor(colors.HexColor('#22d3ee'))  # Cyan
+        canvas.rect(0, A4[1] - 60, A4[0], 20, fill=1, stroke=0)
+
+        canvas.setFillColor(colors.HexColor('#ec4899'))  # Pink
+        canvas.rect(0, A4[1] - 80, A4[0], 20, fill=1, stroke=0)
+
+        canvas.setFillColor(colors.HexColor('#facc15'))  # Yellow
+        canvas.rect(0, A4[1] - 100, A4[0], 20, fill=1, stroke=0)
+
+        # Company Name in Header
+        canvas.setFillColor(colors.white)
+        canvas.setFont('Helvetica-Bold', 24)
+        canvas.drawString(50, A4[1] - 50, "AI VOICE ASSISTANT")
+
+        canvas.setFont('Helvetica', 10)
+        canvas.drawString(50, A4[1] - 90, "Intelligent Booking & Service Solutions")
+
+        # Footer
+        canvas.setFillColor(colors.HexColor('#1e293b'))  # Dark slate
+        canvas.rect(0, 0, A4[0], 50, fill=1, stroke=0)
+
+        canvas.setFillColor(colors.white)
+        canvas.setFont('Helvetica', 9)
+        canvas.drawCentredString(A4[0] / 2, 30, "Powered by AI Technology")
+        canvas.drawCentredString(A4[0] / 2, 15, "Thank you for choosing our service!")
+
+        canvas.restoreState()
+
+    doc = SimpleDocTemplate(
+        filename,
+        pagesize=A4,
+        topMargin=120,
+        bottomMargin=70,
+        leftMargin=50,
+        rightMargin=50
+    )
+
     elements = []
     styles = getSampleStyleSheet()
 
-    elements.append(Paragraph("INVOICE", styles["Title"]))
-    elements.append(Spacer(1, 0.5 * inch))
-
-    elements.append(Paragraph(f"Invoice ID: {session_id}", styles["Normal"]))
-    elements.append(
-        Paragraph(
-            f"Created On: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}",
-            styles["Normal"],
-        )
+    # Custom Styles
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=32,
+        textColor=colors.HexColor('#1e293b'),
+        spaceAfter=30,
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold'
     )
 
-    elements.append(Spacer(1, 0.5 * inch))
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#0ea5e9'),
+        spaceAfter=12,
+        fontName='Helvetica-Bold'
+    )
 
-    data = [
-        ["Store", session_data["store"]],
-        ["Product", session_data["product"]],
-        ["Details", session_data["details"]],
-        ["Appointment Date", session_data.get("appointment_date", "")],
-        ["Appointment Time", session_data.get("appointment_time", "")],
-        ["Status", "Confirmed"],
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#334155'),
+        spaceAfter=10
+    )
+
+    # Invoice Title
+    elements.append(Paragraph("INVOICE", title_style))
+    elements.append(Spacer(1, 0.3 * inch))
+
+    # Invoice Info Box
+    invoice_info_data = [
+        [Paragraph("<b>Invoice Number:</b>", normal_style), Paragraph(f"<b>{session_id}</b>", normal_style)],
+        [Paragraph("<b>Date Issued:</b>", normal_style), Paragraph(datetime.datetime.now().strftime('%B %d, %Y'), normal_style)],
+        [Paragraph("<b>Time:</b>", normal_style), Paragraph(datetime.datetime.now().strftime('%I:%M %p'), normal_style)],
     ]
 
-    table = Table(data, colWidths=[2.5 * inch, 3 * inch])
-    elements.append(table)
+    invoice_info_table = Table(invoice_info_data, colWidths=[2 * inch, 3.5 * inch])
+    invoice_info_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f0f9ff')),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1e293b')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#bae6fd')),
+    ]))
 
-    elements.append(Spacer(1, 1 * inch))
-    elements.append(Paragraph("Thank you for choosing our service.", styles["Normal"]))
+    elements.append(invoice_info_table)
+    elements.append(Spacer(1, 0.4 * inch))
 
-    doc.build(elements)
+    # Booking Details Section
+    elements.append(Paragraph("BOOKING DETAILS", heading_style))
+    elements.append(Spacer(1, 0.1 * inch))
 
-    print(f"Invoice created: {filename}")
+    # Main Details Table with colors
+    booking_data = [
+        [
+            Paragraph("<b>Field</b>", ParagraphStyle('TableHeader', parent=normal_style, textColor=colors.white, alignment=TA_CENTER)),
+            Paragraph("<b>Information</b>", ParagraphStyle('TableHeader', parent=normal_style, textColor=colors.white, alignment=TA_CENTER))
+        ],
+        [Paragraph("<b>Store Name</b>", normal_style), Paragraph(session_data["store"], normal_style)],
+        [Paragraph("<b>Product/Service</b>", normal_style), Paragraph(session_data["product"], normal_style)],
+        [Paragraph("<b>Service Details</b>", normal_style), Paragraph(session_data["details"], normal_style)],
+        [Paragraph("<b>Appointment Date</b>", normal_style), Paragraph(session_data.get("appointment_date", "To be confirmed"), normal_style)],
+        [Paragraph("<b>Appointment Time</b>", normal_style), Paragraph(session_data.get("appointment_time", "To be confirmed"), normal_style)],
+    ]
+
+    booking_table = Table(booking_data, colWidths=[2 * inch, 3.5 * inch])
+    booking_table.setStyle(TableStyle([
+        # Header row
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0ea5e9')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 15),
+        ('TOPPADDING', (0, 0), (-1, 0), 15),
+
+        # Data rows - alternating colors
+        ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor('#cffafe')),
+        ('BACKGROUND', (0, 2), (-1, 2), colors.white),
+        ('BACKGROUND', (0, 3), (-1, 3), colors.HexColor('#cffafe')),
+        ('BACKGROUND', (0, 4), (-1, 4), colors.white),
+        ('BACKGROUND', (0, 5), (-1, 5), colors.HexColor('#cffafe')),
+
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.HexColor('#1e293b')),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 12),
+        ('TOPPADDING', (0, 1), (-1, -1), 12),
+        ('LEFTPADDING', (0, 0), (-1, -1), 15),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+
+        ('GRID', (0, 0), (-1, -1), 1.5, colors.HexColor('#0ea5e9')),
+        ('LINEBELOW', (0, 0), (-1, 0), 2, colors.HexColor('#0284c7')),
+    ]))
+
+    elements.append(booking_table)
+    elements.append(Spacer(1, 0.4 * inch))
+
+    # Status Badge
+    status_data = [
+        [
+            Paragraph("<b>BOOKING STATUS</b>", ParagraphStyle('Status', parent=normal_style, textColor=colors.white, fontSize=12, alignment=TA_CENTER))
+        ],
+        [
+            Paragraph("✓ CONFIRMED", ParagraphStyle('StatusValue', parent=title_style, textColor=colors.HexColor('#10b981'), fontSize=20, alignment=TA_CENTER))
+        ]
+    ]
+
+    status_table = Table(status_data, colWidths=[5.5 * inch])
+    status_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#059669')),
+        ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor('#d1fae5')),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+        ('TOPPADDING', (0, 0), (-1, -1), 15),
+        ('GRID', (0, 0), (-1, -1), 2, colors.HexColor('#059669')),
+    ]))
+
+    elements.append(status_table)
+    elements.append(Spacer(1, 0.5 * inch))
+
+    # Important Notes
+    notes_style = ParagraphStyle(
+        'Notes',
+        parent=normal_style,
+        fontSize=9,
+        textColor=colors.HexColor('#64748b'),
+        alignment=TA_CENTER,
+        spaceAfter=6
+    )
+
+    elements.append(Paragraph("<b>Important Notes:</b>", notes_style))
+    elements.append(Paragraph("Please bring this invoice to your appointment.", notes_style))
+    elements.append(Paragraph("For any changes or cancellations, please contact us 24 hours in advance.", notes_style))
+
+    # Build PDF with custom page template
+    doc.build(elements, onFirstPage=add_page_decorations, onLaterPages=add_page_decorations)
+
+    print(f"✨ Professional invoice created: {filename}")
 
     return filename
 
