@@ -9,33 +9,60 @@ type Message = {
 };
 
 export default function CallPage() {
-  const [status, setStatus] = useState("Initializing brain...");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [conversationStep, setConversationStep] = useState(0);
-
   const searchParams = useSearchParams();
+
   const store = searchParams.get("store");
   const product = searchParams.get("product");
   const details = searchParams.get("details");
 
+  const [status, setStatus] = useState("Initializing brain...");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  // ------------------------
+  // Start Session
+  // ------------------------
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setStatus("AI Connected");
+    const startSession = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/session/start", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            store,
+            product,
+            details,
+          }),
+        });
 
-      setMessages([
-        {
-          role: "assistant",
-          content: `Hello. I am contacting ${store} regarding ${product}. I will gather the required information now.`,
-        },
-      ]);
-    }, 2000);
+        const data = await response.json();
 
-    return () => clearTimeout(timer);
-  }, []);
+        setSessionId(data.session_id);
+        setStatus("AI Connected");
 
-  const sendMessage = () => {
-    if (!input.trim()) return;
+        setMessages([
+          {
+            role: "assistant",
+            content: data.assistant_message,
+          },
+        ]);
+      } catch (error) {
+        console.error(error);
+        setStatus("Connection failed");
+      }
+    };
+
+    startSession();
+  }, [store, product, details]);
+
+  // ------------------------
+  // Send Message
+  // ------------------------
+  const sendMessage = async () => {
+    if (!input.trim() || !sessionId) return;
 
     const userMessage: Message = {
       role: "user",
@@ -45,56 +72,31 @@ export default function CallPage() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
 
-    setTimeout(() => {
-      let aiResponse: Message;
+    const response = await fetch("http://127.0.0.1:8000/session/message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        message: userMessage.content,
+      }),
+    });
 
-      switch (conversationStep) {
-        case 0:
-          aiResponse = {
-            role: "assistant",
-            content: "Thank you. Could you please tell me the cost per person?",
-          };
-          setConversationStep(1);
-          break;
+    const data = await response.json();
 
-        case 1:
-          aiResponse = {
-            role: "assistant",
-            content: "Understood. Is the requested time slot available?",
-          };
-          setConversationStep(2);
-          break;
-
-        case 2:
-          aiResponse = {
-            role: "assistant",
-            content:
-              "Great. I am now confirming the reservation. Please provide the name for the booking.",
-          };
-          setConversationStep(3);
-          break;
-
-        case 3:
-          aiResponse = {
-            role: "assistant",
-            content:
-              "Reservation confirmed. Thank you. The booking has been completed successfully.",
-          };
-          setConversationStep(4);
-          break;
-
-        default:
-          aiResponse = {
-            role: "assistant",
-            content: "The session has been completed.",
-          };
-      }
-
-      setMessages((prev) => [...prev, aiResponse]);
-    }, 1000);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: data.assistant_message,
+      },
+    ]);
   };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#0B0F19]">
+
       {/* Header */}
       <div className="border-b border-white/10 p-4 text-center text-sm text-gray-400">
         {status}
@@ -122,7 +124,7 @@ export default function CallPage() {
         ))}
       </div>
 
-      {/* Bottom Control Area */}
+      {/* Bottom Input */}
       <div className="border-t border-white/10 p-6">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
           <input
