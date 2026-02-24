@@ -165,7 +165,7 @@ export default function Home() {
           >
             <Link href="/enquiry">
               <motion.button
-                className="group relative px-12 py-5 bg-gradient-to-r from-cyan-500 via-pink-500 to-yellow-500 text-white text-lg font-bold rounded-2xl overflow-hidden shadow-2xl"
+                className="group relative px-12 py-5 bg-gradient-to-r from-cyan-500 via-pink-500 to-yellow-500 text-white text-lg font-bold rounded-2xl overflow-hidden shadow-2xl cursor-pointer"
                 whileHover={{ scale: 1.05, boxShadow: "0 0 40px rgba(34, 211, 238, 0.6)" }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -176,7 +176,19 @@ export default function Home() {
                   transition={{ duration: 0.8 }}
                 />
                 <span className="relative z-10 flex items-center gap-3">
-                  <RocketLaunchIcon className="w-6 h-6" />
+                  <motion.div
+                    animate={{
+                      y: [0, -8, 0],
+                      rotate: [0, 15, 0]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    <RocketLaunchIcon className="w-6 h-6" />
+                  </motion.div>
                   Make an Enquiry
                 </span>
               </motion.button>
@@ -184,12 +196,24 @@ export default function Home() {
 
             <Link href="/feedback">
               <motion.button
-                className="px-12 py-5 bg-white/5 backdrop-blur-xl border-2 border-white/20 text-white text-lg font-semibold rounded-2xl hover:bg-white/10 transition-all duration-300"
+                className="px-12 py-5 bg-white/5 backdrop-blur-xl border-2 border-white/20 text-white text-lg font-semibold rounded-2xl hover:bg-white/10 transition-all duration-300 cursor-pointer"
                 whileHover={{ scale: 1.05, borderColor: "rgba(236, 72, 153, 0.6)" }}
                 whileTap={{ scale: 0.95 }}
               >
                 <span className="flex items-center gap-3">
-                  <StarIcon className="w-6 h-6 text-yellow-400" />
+                  <motion.div
+                    animate={{
+                      rotate: [0, 360],
+                      scale: [1, 1.2, 1]
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    <StarIcon className="w-6 h-6 text-yellow-400" />
+                  </motion.div>
                   Collect Feedback
                 </span>
               </motion.button>
