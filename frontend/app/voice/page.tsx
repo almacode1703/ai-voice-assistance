@@ -167,6 +167,8 @@ function VoiceCallContent() {
 
       if (finalTranscript) {
         console.log("✅ Final transcript received:", finalTranscript);
+        // Stop recognition before sending message
+        recognition.stop();
         sendMessage(finalTranscript);
       }
     };
@@ -206,39 +208,64 @@ function VoiceCallContent() {
 
   // Send Message to Backend
   const sendMessage = async (transcript: string) => {
-    if (!sessionId || !transcript.trim()) return;
+    console.log("📤 Sending message to backend:", transcript);
+
+    if (!sessionId) {
+      console.error("❌ No session ID!");
+      return;
+    }
+
+    if (!transcript.trim()) {
+      console.error("❌ Empty transcript!");
+      return;
+    }
 
     setCallState("processing");
     setMessages((prev) => [...prev, { role: "user", content: transcript }]);
+    setCurrentTranscript(""); // Clear transcript display
 
     try {
+      console.log("🌐 Making API call to backend...");
+      console.log("Session ID:", sessionId);
+      console.log("Message:", transcript);
+
       const res = await fetch("http://localhost:8000/session/message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionId, message: transcript }),
       });
 
-      if (!res.ok) throw new Error("Failed to send message");
+      console.log("📥 Response status:", res.status);
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
 
       const data = await res.json();
+      console.log("📦 Received data from backend:", data);
+
       setMessages((prev) => [...prev, { role: "assistant", content: data.assistant_message }]);
 
       if (data.completed) {
+        console.log("✅ Booking completed!");
         setCompleted(true);
         setCallState("completed");
       }
 
       if (data.invoice_url) {
+        console.log("📄 Invoice URL received:", data.invoice_url);
         setInvoiceUrl(data.invoice_url);
       }
 
       // Speak AI response
+      console.log("🔊 Will speak AI response in 500ms...");
       setTimeout(() => {
         speakText(data.assistant_message);
       }, 500);
 
     } catch (err) {
-      console.error("Send message error:", err);
+      console.error("❌ Send message error:", err);
+      alert(`Error communicating with backend: ${err}`);
       setCallState("active");
     }
   };
