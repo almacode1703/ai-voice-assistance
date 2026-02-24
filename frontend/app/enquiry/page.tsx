@@ -264,7 +264,9 @@ export default function EnquiryPage() {
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && e.ctrlKey && details) {
+                    // Enter = Submit, Shift+Enter = New line
+                    if (e.key === "Enter" && !e.shiftKey && details) {
+                      e.preventDefault(); // Prevent new line
                       nextStep();
                     }
                   }}
@@ -272,7 +274,7 @@ export default function EnquiryPage() {
                   className="w-full px-6 py-4 bg-black/40 border-2 border-white/10 rounded-2xl focus:outline-none focus:border-yellow-400/50 focus:ring-4 focus:ring-yellow-400/20 transition-all text-white placeholder-gray-500 h-40 resize-none text-lg"
                   autoFocus
                 />
-                <p className="text-xs text-gray-500 -mt-2 mb-4">Press Ctrl+Enter to continue</p>
+                <p className="text-xs text-gray-500 -mt-2 mb-4">Press Enter to continue • Shift+Enter for new line</p>
 
                 <div className="flex gap-4">
                   <motion.button
