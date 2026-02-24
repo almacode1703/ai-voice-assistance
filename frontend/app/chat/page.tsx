@@ -281,25 +281,39 @@ function CallPageContent() {
             >
               {/* Home Button */}
               <motion.button
-                onClick={() => router.push("/")}
-                className="group relative w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg overflow-hidden"
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                whileTap={{ scale: 0.95 }}
-                title="Go to Home"
+                onClick={() => invoiceUrl && router.push("/")}
+                disabled={!invoiceUrl}
+                className={`group relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden transition-all duration-300 ${
+                  invoiceUrl
+                    ? "bg-gradient-to-br from-cyan-500 to-blue-500 cursor-pointer"
+                    : "bg-gray-600 cursor-not-allowed opacity-50"
+                }`}
+                whileHover={invoiceUrl ? { scale: 1.1, rotate: 5 } : {}}
+                whileTap={invoiceUrl ? { scale: 0.95 } : {}}
+                title={invoiceUrl ? "Go to Home" : "Complete chat to enable"}
               >
-                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {invoiceUrl && (
+                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                )}
                 <HomeIcon className="w-6 h-6 text-white relative z-10" />
               </motion.button>
 
               {/* New Enquiry Button */}
               <motion.button
-                onClick={() => router.push("/enquiry")}
-                className="group relative w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg overflow-hidden"
-                whileHover={{ scale: 1.1, rotate: -5 }}
-                whileTap={{ scale: 0.95 }}
-                title="New Enquiry"
+                onClick={() => invoiceUrl && router.push("/enquiry")}
+                disabled={!invoiceUrl}
+                className={`group relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden transition-all duration-300 ${
+                  invoiceUrl
+                    ? "bg-gradient-to-br from-pink-500 to-rose-500 cursor-pointer"
+                    : "bg-gray-600 cursor-not-allowed opacity-50"
+                }`}
+                whileHover={invoiceUrl ? { scale: 1.1, rotate: -5 } : {}}
+                whileTap={invoiceUrl ? { scale: 0.95 } : {}}
+                title={invoiceUrl ? "New Enquiry" : "Complete chat to enable"}
               >
-                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {invoiceUrl && (
+                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                )}
                 <PlusCircleIcon className="w-6 h-6 text-white relative z-10" />
               </motion.button>
             </motion.div>
