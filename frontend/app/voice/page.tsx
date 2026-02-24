@@ -249,6 +249,28 @@ function VoiceCallContent() {
     }
   };
 
+  // Check if user wants to end call
+  const isGoodbyeMessage = (text: string): boolean => {
+    const goodbyePhrases = [
+      "thank you",
+      "thanks",
+      "that's all",
+      "thats all",
+      "goodbye",
+      "good bye",
+      "bye",
+      "done",
+      "finish",
+      "no more",
+      "all done",
+      "I'm done",
+      "im done",
+    ];
+
+    const lowerText = text.toLowerCase().trim();
+    return goodbyePhrases.some(phrase => lowerText.includes(phrase));
+  };
+
   // Send Message to Backend
   const sendMessage = async (transcript: string) => {
     console.log("📤 Sending message to backend:", transcript);
@@ -261,6 +283,12 @@ function VoiceCallContent() {
     if (!transcript.trim()) {
       console.error("❌ Empty transcript!");
       return;
+    }
+
+    // Check if user is saying goodbye
+    const isGoodbye = isGoodbyeMessage(transcript);
+    if (isGoodbye) {
+      console.log("👋 Goodbye detected! Will end call after response...");
     }
 
     setCallState("processing");
@@ -304,6 +332,21 @@ function VoiceCallContent() {
       console.log("🔊 Will speak AI response in 500ms...");
       setTimeout(() => {
         speakText(data.assistant_message);
+
+        // If user said goodbye, end call and go home after AI responds
+        if (isGoodbye) {
+          console.log("👋 User said goodbye. Ending call in 3 seconds...");
+          setTimeout(() => {
+            console.log("👋 Ending call and navigating to home...");
+            if (synthRef.current) {
+              synthRef.current.cancel();
+            }
+            if (recognitionRef.current) {
+              recognitionRef.current.stop();
+            }
+            router.push("/");
+          }, 3000); // Wait 3 seconds after AI speaks
+        }
       }, 500);
 
     } catch (err) {
