@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, Suspense, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { gsap } from "gsap";
 import {
@@ -11,6 +11,8 @@ import {
   SparklesIcon,
   UserIcon,
   CpuChipIcon,
+  HomeIcon,
+  PlusCircleIcon,
 } from "@heroicons/react/24/solid";
 
 interface Message {
@@ -20,6 +22,7 @@ interface Message {
 
 function CallPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -271,23 +274,34 @@ function CallPageContent() {
             </div>
 
             <motion.div
-              className="flex gap-2"
+              className="flex gap-3"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              {[
-                { color: "bg-cyan-400" },
-                { color: "bg-pink-400" },
-                { color: "bg-yellow-400" },
-              ].map((dot, i) => (
-                <motion.div
-                  key={i}
-                  className={`w-3 h-3 ${dot.color} rounded-full`}
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                />
-              ))}
+              {/* Home Button */}
+              <motion.button
+                onClick={() => router.push("/")}
+                className="group relative w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg overflow-hidden"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                whileTap={{ scale: 0.95 }}
+                title="Go to Home"
+              >
+                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <HomeIcon className="w-6 h-6 text-white relative z-10" />
+              </motion.button>
+
+              {/* New Enquiry Button */}
+              <motion.button
+                onClick={() => router.push("/enquiry")}
+                className="group relative w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg overflow-hidden"
+                whileHover={{ scale: 1.1, rotate: -5 }}
+                whileTap={{ scale: 0.95 }}
+                title="New Enquiry"
+              >
+                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <PlusCircleIcon className="w-6 h-6 text-white relative z-10" />
+              </motion.button>
             </motion.div>
           </div>
         </div>
