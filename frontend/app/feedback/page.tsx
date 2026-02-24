@@ -172,7 +172,7 @@ export default function FeedbackPage() {
               className="w-full h-40 p-6 rounded-2xl bg-white/5 border-2 border-white/10 focus:outline-none focus:border-cyan-400/50 focus:ring-4 focus:ring-cyan-400/20 transition-all duration-300 text-white placeholder-gray-500 text-lg resize-none"
             />
             <div className="text-right text-sm text-gray-500 mt-2">
-              {text.length} characters
+              {text?.length || 0} characters
             </div>
           </motion.div>
 
