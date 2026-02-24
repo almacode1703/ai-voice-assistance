@@ -12,6 +12,7 @@ import {
   SpeakerWaveIcon,
   HomeIcon,
   PlusCircleIcon,
+  PaperAirplaneIcon,
 } from "@heroicons/react/24/solid";
 
 type CallState = "idle" | "connecting" | "active" | "listening" | "processing" | "completed";
@@ -36,6 +37,8 @@ function VoiceCallContent() {
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const hasStartedSession = useRef(false);
+  const transcriptTimerRef = useRef<any>(null);
+  const lastTranscriptRef = useRef<string>("");
 
   // Memoize URL parameters
   const sessionParams = useMemo(() => ({
@@ -185,14 +188,31 @@ function VoiceCallContent() {
         }
       }
 
-      console.log("📝 Transcript:", finalTranscript || interimTranscript);
-      setCurrentTranscript(finalTranscript || interimTranscript);
+      const currentText = finalTranscript || interimTranscript;
+      console.log(finalTranscript ? "✅ FINAL:" : "⏳ INTERIM:", currentText);
+      setCurrentTranscript(currentText);
+      lastTranscriptRef.current = currentText;
+
+      // Clear existing timer
+      if (transcriptTimerRef.current) {
+        clearTimeout(transcriptTimerRef.current);
+      }
 
       if (finalTranscript) {
-        console.log("✅ Final transcript received:", finalTranscript);
+        console.log("✅ Final transcript received, sending immediately:", finalTranscript);
         // Stop recognition before sending message
         recognition.stop();
         sendMessage(finalTranscript);
+      } else if (interimTranscript) {
+        // Set a timer to auto-send after 2 seconds of no new speech
+        console.log("⏰ Setting 2-second timer for auto-send...");
+        transcriptTimerRef.current = setTimeout(() => {
+          console.log("⏰ Timer expired! Auto-sending transcript:", lastTranscriptRef.current);
+          if (lastTranscriptRef.current.trim()) {
+            recognition.stop();
+            sendMessage(lastTranscriptRef.current);
+          }
+        }, 2000);
       }
     };
 
@@ -547,7 +567,29 @@ function VoiceCallContent() {
                 className="bg-white/5 rounded-2xl p-6 mb-6 border border-white/10"
               >
                 <p className="text-sm text-gray-400 mb-2">You're saying:</p>
-                <p className="text-white text-lg">{currentTranscript}</p>
+                <p className="text-white text-lg mb-4">{currentTranscript}</p>
+
+                {/* Manual Send Button */}
+                <motion.button
+                  onClick={() => {
+                    if (recognitionRef.current) {
+                      recognitionRef.current.stop();
+                    }
+                    if (transcriptTimerRef.current) {
+                      clearTimeout(transcriptTimerRef.current);
+                    }
+                    sendMessage(currentTranscript);
+                  }}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <PaperAirplaneIcon className="w-5 h-5" />
+                  Send Now
+                </motion.button>
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  Or wait 2 seconds to auto-send
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
