@@ -1,89 +1,75 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 
-type Message = {
-  role: "assistant" | "user";
+interface Message {
+  role: "user" | "assistant";
   content: string;
-};
+}
+
+interface SessionData {
+  completed: boolean;
+  invoiceUrl: string | null;
+}
 
 export default function CallPage() {
-  const searchParams = useSearchParams();
-
-  const store = searchParams.get("store");
-  const product = searchParams.get("product");
-  const details = searchParams.get("details");
-
-  const [status, setStatus] = useState("Initializing brain...");
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [completed, setCompleted] = useState(false);
+  const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
 
-  // ------------------------
+  // -------------------------------
   // Start Session
-  // ------------------------
+  // -------------------------------
   useEffect(() => {
     const startSession = async () => {
-      try {
-        const response = await fetch("http://127.0.0.1:8000/session/start", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            store,
-            product,
-            details,
-          }),
-        });
+      const res = await fetch("http://localhost:8000/session/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          store: "Apple Computers",
+          product: "MacBook Pro",
+          details: "Display screen repair",
+        }),
+      });
 
-        const data = await response.json();
+      const data = await res.json();
+      setSessionId(data.session_id);
 
-        setSessionId(data.session_id);
-        setStatus("AI Connected");
-
-        setMessages([
-          {
-            role: "assistant",
-            content: data.assistant_message,
-          },
-        ]);
-      } catch (error) {
-        console.error(error);
-        setStatus("Connection failed");
-      }
+      setMessages([
+        {
+          role: "assistant",
+          content: data.assistant_message,
+        },
+      ]);
     };
 
     startSession();
-  }, [store, product, details]);
+  }, []);
 
-  // ------------------------
+  // -------------------------------
   // Send Message
-  // ------------------------
+  // -------------------------------
   const sendMessage = async () => {
     if (!input.trim() || !sessionId) return;
 
-    const userMessage: Message = {
-      role: "user",
-      content: input,
-    };
+    const userMessage = input;
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: userMessage },
+    ]);
+
     setInput("");
 
-    const response = await fetch("http://127.0.0.1:8000/session/message", {
+    const res = await fetch("http://localhost:8000/session/message", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        session_id: sessionId,
-        message: userMessage.content,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, message: userMessage }),
     });
 
-    const data = await response.json();
+    const data = await res.json();
 
     setMessages((prev) => [
       ...prev,
@@ -92,59 +78,88 @@ export default function CallPage() {
         content: data.assistant_message,
       },
     ]);
+
+    if (data.completed) {
+      setCompleted(true);
+    }
+
+    if (data.invoice_url) {
+      setInvoiceUrl(data.invoice_url);
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0B0F19]">
+    <div className="min-h-screen bg-[#0B0F19] text-white flex items-center justify-center">
+      <div className="w-full max-w-4xl h-[85vh] bg-[#111827] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
 
-      {/* Header */}
-      <div className="border-b border-white/10 p-4 text-center text-sm text-gray-400">
-        {status}
-      </div>
+        {/* Header */}
+        <div className="py-4 text-center text-gray-400 border-b border-white/10">
+          AI Connected
+        </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6 max-w-3xl w-full mx-auto">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`flex ${
-              msg.role === "assistant" ? "justify-start" : "justify-end"
-            }`}
-          >
+        {/* Chat Area */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {messages.map((msg, index) => (
             <div
-              className={`px-5 py-3 rounded-2xl max-w-md text-sm ${
+              key={index}
+              className={`flex ${
                 msg.role === "assistant"
-                  ? "bg-white/10 text-white"
-                  : "bg-white text-black"
+                  ? "justify-start"
+                  : "justify-end"
               }`}
             >
-              {msg.content}
+              <div
+                className={`max-w-md px-6 py-4 rounded-2xl ${
+                  msg.role === "assistant"
+                    ? "bg-white/10 text-white"
+                    : "bg-white text-black"
+                }`}
+              >
+                <p>{msg.content}</p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bottom Input */}
-      <div className="border-t border-white/10 p-6">
-        <div className="max-w-3xl mx-auto flex items-center gap-4">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") sendMessage();
-            }}
-            placeholder="Type your response..."
-            className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-white/30 transition"
-          />
-
-          <button
-            onClick={sendMessage}
-            className="px-6 py-3 bg-white text-black rounded-xl font-medium"
-          >
-            Send
-          </button>
+          ))}
         </div>
+
+        {/* Input Area */}
+        {!completed && (
+          <div className="p-6 border-t border-white/10 flex gap-4">
+            <input
+              type="text"
+              placeholder="Type your response..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              className="flex-1 px-6 py-4 rounded-2xl bg-white/10 border border-white/20 focus:outline-none"
+            />
+            <button
+              onClick={sendMessage}
+              className="px-6 py-4 bg-white text-black rounded-2xl font-medium hover:bg-gray-200 transition"
+            >
+              Send
+            </button>
+          </div>
+        )}
+
+        {completed && (
+          <div className="p-6 border-t border-white/10">
+            <div className="text-center text-green-400 mb-4">
+              Booking completed successfully.
+            </div>
+            {invoiceUrl && (
+              <div className="flex justify-center">
+                <a
+                  href={invoiceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-2xl font-medium hover:opacity-90 transition shadow-lg"
+                >
+                  📄 Download Invoice
+                </a>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
