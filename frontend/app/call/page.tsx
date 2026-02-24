@@ -12,8 +12,9 @@ export default function CallPage() {
   const [status, setStatus] = useState("Initializing brain...");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const searchParams = useSearchParams();
+  const [conversationStep, setConversationStep] = useState(0);
 
+  const searchParams = useSearchParams();
   const store = searchParams.get("store");
   const product = searchParams.get("product");
   const details = searchParams.get("details");
@@ -44,18 +45,54 @@ export default function CallPage() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
 
-    // Simulated AI response
     setTimeout(() => {
-      const aiResponse: Message = {
-        role: "assistant",
-        content:
-          "Thank you. I am processing your response and gathering required details.",
-      };
+      let aiResponse: Message;
+
+      switch (conversationStep) {
+        case 0:
+          aiResponse = {
+            role: "assistant",
+            content: "Thank you. Could you please tell me the cost per person?",
+          };
+          setConversationStep(1);
+          break;
+
+        case 1:
+          aiResponse = {
+            role: "assistant",
+            content: "Understood. Is the requested time slot available?",
+          };
+          setConversationStep(2);
+          break;
+
+        case 2:
+          aiResponse = {
+            role: "assistant",
+            content:
+              "Great. I am now confirming the reservation. Please provide the name for the booking.",
+          };
+          setConversationStep(3);
+          break;
+
+        case 3:
+          aiResponse = {
+            role: "assistant",
+            content:
+              "Reservation confirmed. Thank you. The booking has been completed successfully.",
+          };
+          setConversationStep(4);
+          break;
+
+        default:
+          aiResponse = {
+            role: "assistant",
+            content: "The session has been completed.",
+          };
+      }
 
       setMessages((prev) => [...prev, aiResponse]);
     }, 1000);
   };
-
   return (
     <div className="min-h-screen flex flex-col bg-[#0B0F19]">
       {/* Header */}
