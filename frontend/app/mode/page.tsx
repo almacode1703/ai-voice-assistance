@@ -90,7 +90,7 @@ function ModePageContent() {
           <div className="space-y-4">
             {/* Chat Option */}
             <motion.button
-              onClick={() => router.push(`/call?${query}`)}
+              onClick={() => router.push(`/chat?${query}`)}
               className="group w-full relative overflow-hidden"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
