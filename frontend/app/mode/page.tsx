@@ -91,7 +91,7 @@ function ModePageContent() {
             {/* Chat Option */}
             <motion.button
               onClick={() => router.push(`/chat?${query}`)}
-              className="group w-full relative overflow-hidden"
+              className="group w-full relative overflow-hidden cursor-pointer"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.6 }}
@@ -101,9 +101,13 @@ function ModePageContent() {
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
               <div className="relative bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl p-6 flex items-center justify-between shadow-xl">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center">
+                  <motion.div
+                    className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
                     <ChatBubbleBottomCenterTextIcon className="w-8 h-8 text-white" />
-                  </div>
+                  </motion.div>
                   <div className="text-left">
                     <h3 className="text-2xl font-bold text-white">Continue as Chat</h3>
                     <p className="text-cyan-100 text-sm mt-1">Type your messages and get instant responses</p>
@@ -121,7 +125,7 @@ function ModePageContent() {
             {/* Voice Option */}
             <motion.button
               onClick={() => router.push(`/voice?${query}`)}
-              className="group w-full relative overflow-hidden"
+              className="group w-full relative overflow-hidden cursor-pointer"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.7 }}
@@ -131,9 +135,13 @@ function ModePageContent() {
               <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-500 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
               <div className="relative bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-6 flex items-center justify-between shadow-xl">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center">
+                  <motion.div
+                    className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center"
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
                     <PhoneIcon className="w-8 h-8 text-white" />
-                  </div>
+                  </motion.div>
                   <div className="text-left">
                     <h3 className="text-2xl font-bold text-white">Start Voice Call</h3>
                     <p className="text-pink-100 text-sm mt-1">Speak naturally with voice recognition</p>
