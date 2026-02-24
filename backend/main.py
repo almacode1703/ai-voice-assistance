@@ -406,3 +406,119 @@ JSON: {{"reply": "...", "completed": true, "appointment_date": "2026-03-02", "ap
         "completed": parsed.get("completed", False),
         "invoice_url": session["invoice_url"],
     }
+
+
+class FeedbackRequest(BaseModel):
+    message: str
+
+
+class RewriteRequest(BaseModel):
+    text: str
+
+
+@app.post("/feedback")
+def analyze_feedback(data: FeedbackRequest):
+    """Analyze customer feedback for sentiment, rating, and summary"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """
+You are a professional feedback analyzer.
+
+Analyze the customer feedback and respond ONLY in JSON format:
+
+{
+  "sentiment": "positive" or "neutral" or "negative",
+  "rating": 1-5 (integer),
+  "summary": "brief summary of the feedback",
+  "key_points": ["point 1", "point 2", "point 3"],
+  "emotion": "happy" or "satisfied" or "neutral" or "disappointed" or "angry"
+}
+
+Rules:
+- rating 5 = excellent/very positive
+- rating 4 = good/positive
+- rating 3 = okay/neutral
+- rating 2 = poor/negative
+- rating 1 = very poor/very negative
+- summary should be 1-2 sentences
+- key_points should be 2-4 main points from feedback
+- Always return valid JSON
+"""
+                },
+                {
+                    "role": "user",
+                    "content": f"Analyze this feedback: {data.message}"
+                }
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.3,
+        )
+
+        result = json.loads(response.choices[0].message.content)
+
+        return {
+            "sentiment": result.get("sentiment", "neutral"),
+            "rating": result.get("rating", 3),
+            "summary": result.get("summary", "Thank you for your feedback!"),
+            "key_points": result.get("key_points", []),
+            "emotion": result.get("emotion", "neutral")
+        }
+
+    except Exception as e:
+        print("Feedback analysis error:", e)
+        return {
+            "sentiment": "neutral",
+            "rating": 3,
+            "summary": "Thank you for your feedback!",
+            "key_points": ["Feedback received"],
+            "emotion": "neutral"
+        }
+
+
+@app.post("/feedback/rewrite")
+def rewrite_feedback(data: RewriteRequest):
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """
+You are a professional writing assistant.
+
+Rewrite the user's feedback to:
+- Be clear
+- Professional
+- Well structured
+- Polite
+- Keep original meaning
+
+Return only the improved version.
+Do not add extra commentary.
+"""
+                },
+                {
+                    "role": "user",
+                    "content": data.text
+                }
+            ],
+            temperature=0.5,
+        )
+
+        improved = response.choices[0].message.content.strip()
+
+        return {
+            "improved_text": improved
+        }
+
+    except Exception as e:
+        print("Rewrite error:", e)
+        return {
+            "improved_text": data.text
+        }
