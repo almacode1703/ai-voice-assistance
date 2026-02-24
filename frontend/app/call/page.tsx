@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { gsap } from "gsap";
 import {
@@ -17,16 +18,23 @@ interface Message {
   content: string;
 }
 
-export default function CallPage() {
+function CallPageContent() {
+  const searchParams = useSearchParams();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [completed, setCompleted] = useState(false);
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Get URL parameters
+  const store = searchParams.get("store") || "Apple Computers";
+  const product = searchParams.get("product") || "MacBook Pro";
+  const details = searchParams.get("details") || "Display screen repair";
 
   // GSAP Page Load Animation
   useEffect(() => {
@@ -48,29 +56,38 @@ export default function CallPage() {
   // Start Session
   useEffect(() => {
     const startSession = async () => {
-      const res = await fetch("http://localhost:8000/session/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          store: "Apple Computers",
-          product: "MacBook Pro",
-          details: "Display screen repair",
-        }),
-      });
+      try {
+        const res = await fetch("http://localhost:8000/session/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            store,
+            product,
+            details,
+          }),
+        });
 
-      const data = await res.json();
-      setSessionId(data.session_id);
+        if (!res.ok) {
+          throw new Error("Failed to start session");
+        }
 
-      setMessages([
-        {
-          role: "assistant",
-          content: data.assistant_message,
-        },
-      ]);
+        const data = await res.json();
+        setSessionId(data.session_id);
+
+        setMessages([
+          {
+            role: "assistant",
+            content: data.assistant_message,
+          },
+        ]);
+      } catch (err) {
+        console.error("Session start error:", err);
+        setError("Failed to connect to backend. Please check if the server is running.");
+      }
     };
 
     startSession();
-  }, []);
+  }, [store, product, details]);
 
   // Send Message
   const sendMessage = async () => {
@@ -86,33 +103,70 @@ export default function CallPage() {
     setInput("");
     setIsTyping(true);
 
-    const res = await fetch("http://localhost:8000/session/message", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: sessionId, message: userMessage }),
-    });
+    try {
+      const res = await fetch("http://localhost:8000/session/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, message: userMessage }),
+      });
 
-    const data = await res.json();
+      if (!res.ok) {
+        throw new Error("Failed to send message");
+      }
 
-    setTimeout(() => {
+      const data = await res.json();
+
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: data.assistant_message,
+          },
+        ]);
+        setIsTyping(false);
+
+        if (data.completed) {
+          setCompleted(true);
+        }
+
+        if (data.invoice_url) {
+          setInvoiceUrl(data.invoice_url);
+        }
+      }, 500);
+    } catch (err) {
+      console.error("Send message error:", err);
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: data.assistant_message,
+          content: "Sorry, there was an error sending your message. Please try again.",
         },
       ]);
-      setIsTyping(false);
-
-      if (data.completed) {
-        setCompleted(true);
-      }
-
-      if (data.invoice_url) {
-        setInvoiceUrl(data.invoice_url);
-      }
-    }, 500);
+    }
   };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+        <motion.div
+          className="bg-red-500/10 border-2 border-red-500/50 rounded-3xl p-8 max-w-md text-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <h2 className="text-2xl font-bold text-red-400 mb-4">Connection Error</h2>
+          <p className="text-white">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-2xl font-bold"
+          >
+            Retry
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
@@ -390,5 +444,17 @@ export default function CallPage() {
         )}
       </motion.div>
     </div>
+  );
+}
+
+export default function CallPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-2xl">Loading...</div>
+      </div>
+    }>
+      <CallPageContent />
+    </Suspense>
   );
 }
