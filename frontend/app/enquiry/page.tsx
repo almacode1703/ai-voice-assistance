@@ -139,6 +139,11 @@ export default function EnquiryPage() {
                   type="text"
                   value={store}
                   onChange={(e) => setStore(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && store) {
+                      nextStep();
+                    }
+                  }}
                   placeholder="e.g., Apple Store, Best Buy"
                   className="w-full px-6 py-4 bg-black/40 border-2 border-white/10 rounded-2xl focus:outline-none focus:border-cyan-400/50 focus:ring-4 focus:ring-cyan-400/20 transition-all text-white placeholder-gray-500 text-lg"
                   autoFocus
@@ -147,12 +152,17 @@ export default function EnquiryPage() {
                 <motion.button
                   disabled={!store}
                   onClick={nextStep}
-                  className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-2xl font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-3"
+                  className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-2xl font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-lg flex items-center justify-center gap-3"
                   whileHover={{ scale: store ? 1.02 : 1 }}
                   whileTap={{ scale: store ? 0.98 : 1 }}
                 >
                   Next
-                  <ArrowRightIcon className="w-5 h-5" />
+                  <motion.div
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <ArrowRightIcon className="w-5 h-5" />
+                  </motion.div>
                 </motion.button>
               </motion.div>
             )}
@@ -183,6 +193,11 @@ export default function EnquiryPage() {
                   type="text"
                   value={product}
                   onChange={(e) => setProduct(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && product) {
+                      nextStep();
+                    }
+                  }}
                   placeholder="e.g., MacBook Pro, iPhone 15"
                   className="w-full px-6 py-4 bg-black/40 border-2 border-white/10 rounded-2xl focus:outline-none focus:border-pink-400/50 focus:ring-4 focus:ring-pink-400/20 transition-all text-white placeholder-gray-500 text-lg"
                   autoFocus
@@ -191,23 +206,33 @@ export default function EnquiryPage() {
                 <div className="flex gap-4">
                   <motion.button
                     onClick={prevStep}
-                    className="w-full py-4 border-2 border-white/20 rounded-2xl text-white font-semibold hover:bg-white/5 flex items-center justify-center gap-3"
+                    className="w-full py-4 border-2 border-white/20 rounded-2xl text-white font-semibold hover:bg-white/5 cursor-pointer flex items-center justify-center gap-3"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <ArrowLeftIcon className="w-5 h-5" />
+                    <motion.div
+                      animate={{ x: [0, -5, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <ArrowLeftIcon className="w-5 h-5" />
+                    </motion.div>
                     Back
                   </motion.button>
 
                   <motion.button
                     disabled={!product}
                     onClick={nextStep}
-                    className="w-full py-4 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-lg flex items-center justify-center gap-3"
                     whileHover={{ scale: product ? 1.02 : 1 }}
                     whileTap={{ scale: product ? 0.98 : 1 }}
                   >
                     Next
-                    <ArrowRightIcon className="w-5 h-5" />
+                    <motion.div
+                      animate={{ x: [0, 5, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <ArrowRightIcon className="w-5 h-5" />
+                    </motion.div>
                   </motion.button>
                 </div>
               </motion.div>
@@ -238,31 +263,47 @@ export default function EnquiryPage() {
                 <textarea
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && e.ctrlKey && details) {
+                      nextStep();
+                    }
+                  }}
                   placeholder="e.g., Screen repair needed for MacBook Pro 2020"
                   className="w-full px-6 py-4 bg-black/40 border-2 border-white/10 rounded-2xl focus:outline-none focus:border-yellow-400/50 focus:ring-4 focus:ring-yellow-400/20 transition-all text-white placeholder-gray-500 h-40 resize-none text-lg"
                   autoFocus
                 />
+                <p className="text-xs text-gray-500 -mt-2 mb-4">Press Ctrl+Enter to continue</p>
 
                 <div className="flex gap-4">
                   <motion.button
                     onClick={prevStep}
-                    className="w-full py-4 border-2 border-white/20 rounded-2xl text-white font-semibold hover:bg-white/5 flex items-center justify-center gap-3"
+                    className="w-full py-4 border-2 border-white/20 rounded-2xl text-white font-semibold hover:bg-white/5 cursor-pointer flex items-center justify-center gap-3"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <ArrowLeftIcon className="w-5 h-5" />
+                    <motion.div
+                      animate={{ x: [0, -5, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <ArrowLeftIcon className="w-5 h-5" />
+                    </motion.div>
                     Back
                   </motion.button>
 
                   <motion.button
                     disabled={!details}
                     onClick={nextStep}
-                    className="w-full py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-lg flex items-center justify-center gap-3"
                     whileHover={{ scale: details ? 1.02 : 1 }}
                     whileTap={{ scale: details ? 0.98 : 1 }}
                   >
                     Next
-                    <ArrowRightIcon className="w-5 h-5" />
+                    <motion.div
+                      animate={{ x: [0, 5, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <ArrowRightIcon className="w-5 h-5" />
+                    </motion.div>
                   </motion.button>
                 </div>
               </motion.div>
@@ -325,27 +366,45 @@ export default function EnquiryPage() {
                   </motion.div>
                 </div>
 
-                <div className="flex gap-4 pt-4">
+                <div
+                  className="flex gap-4 pt-4"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleProceed();
+                    }
+                  }}
+                >
                   <motion.button
                     onClick={prevStep}
-                    className="w-full py-4 border-2 border-white/20 rounded-2xl text-white font-semibold hover:bg-white/5 flex items-center justify-center gap-3"
+                    className="w-full py-4 border-2 border-white/20 rounded-2xl text-white font-semibold hover:bg-white/5 cursor-pointer flex items-center justify-center gap-3"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <ArrowLeftIcon className="w-5 h-5" />
+                    <motion.div
+                      animate={{ x: [0, -5, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <ArrowLeftIcon className="w-5 h-5" />
+                    </motion.div>
                     Back
                   </motion.button>
 
                   <motion.button
                     onClick={handleProceed}
-                    className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl font-bold shadow-lg flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl font-bold shadow-lg cursor-pointer flex items-center justify-center gap-3"
                     whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(34, 197, 94, 0.6)" }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <SparklesIcon className="w-5 h-5" />
+                    <motion.div
+                      animate={{ rotate: [0, 360] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    >
+                      <SparklesIcon className="w-5 h-5" />
+                    </motion.div>
                     Proceed
                   </motion.button>
                 </div>
+                <p className="text-xs text-gray-500 text-center mt-4">Press Enter to proceed</p>
               </motion.div>
             )}
           </AnimatePresence>
