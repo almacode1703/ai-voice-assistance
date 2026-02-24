@@ -39,6 +39,7 @@ function VoiceCallContent() {
   const hasStartedSession = useRef(false);
   const transcriptTimerRef = useRef<any>(null);
   const lastTranscriptRef = useRef<string>("");
+  const shouldEndCallRef = useRef(false);
 
   // Memoize URL parameters
   const sessionParams = useMemo(() => ({
@@ -116,6 +117,7 @@ function VoiceCallContent() {
 
     if (!synthRef.current) {
       console.error("❌ Speech synthesis not available");
+      alert("Text-to-speech not available. Please check browser compatibility.");
       return;
     }
 
@@ -136,21 +138,33 @@ function VoiceCallContent() {
     utterance.onend = () => {
       console.log("⏹️ AI finished speaking");
       setAiSpeaking(false);
-      if (!completed) {
-        console.log("🎤 Will auto-start listening in 500ms...");
+
+      // Don't auto-start listening if call should end or is completed
+      if (!completed && !shouldEndCallRef.current) {
+        console.log("🎤 Will auto-start listening in 1000ms...");
         // Start listening after AI finishes speaking
         setTimeout(() => {
           console.log("🎤 Auto-starting listening now...");
           startListening();
-        }, 500);
+        }, 1000);
+      } else {
+        console.log("⏭️ Skipping auto-listen (call ending or completed)");
       }
     };
 
     utterance.onerror = (event) => {
       console.error("❌ Speech synthesis error:", event);
+      alert(`Speech error: ${event.error}`);
     };
 
-    synthRef.current.speak(utterance);
+    try {
+      console.log("🎵 Starting speech synthesis...");
+      synthRef.current.speak(utterance);
+      console.log("✅ Speech synthesis started successfully");
+    } catch (error) {
+      console.error("❌ Failed to start speech:", error);
+      alert(`Failed to speak: ${error}`);
+    }
   };
 
   // Speech Recognition
@@ -289,6 +303,7 @@ function VoiceCallContent() {
     const isGoodbye = isGoodbyeMessage(transcript);
     if (isGoodbye) {
       console.log("👋 Goodbye detected! Will end call after response...");
+      shouldEndCallRef.current = true;
     }
 
     setCallState("processing");
@@ -332,22 +347,25 @@ function VoiceCallContent() {
       console.log("🔊 Will speak AI response in 500ms...");
       setTimeout(() => {
         speakText(data.assistant_message);
-
-        // If user said goodbye, end call and go home after AI responds
-        if (isGoodbye) {
-          console.log("👋 User said goodbye. Ending call in 3 seconds...");
-          setTimeout(() => {
-            console.log("👋 Ending call and navigating to home...");
-            if (synthRef.current) {
-              synthRef.current.cancel();
-            }
-            if (recognitionRef.current) {
-              recognitionRef.current.stop();
-            }
-            router.push("/");
-          }, 3000); // Wait 3 seconds after AI speaks
-        }
       }, 500);
+
+      // Check if should end call (after booking complete OR goodbye detected)
+      if (data.completed || shouldEndCallRef.current) {
+        console.log("👋 Will end call after AI finishes speaking...");
+        setTimeout(() => {
+          console.log("👋 Ending call and navigating to home...");
+          if (synthRef.current) {
+            synthRef.current.cancel();
+          }
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+          }
+          // Reset the flag
+          shouldEndCallRef.current = false;
+          // Navigate to home
+          router.push("/");
+        }, 5000); // Wait 5 seconds for AI to finish speaking
+      }
 
     } catch (err) {
       console.error("❌ Send message error:", err);
