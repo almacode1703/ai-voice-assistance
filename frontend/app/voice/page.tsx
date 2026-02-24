@@ -42,6 +42,7 @@ function VoiceCallContent() {
   const transcriptTimerRef = useRef<any>(null);
   const lastTranscriptRef = useRef<string>("");
   const shouldEndCallRef = useRef(false);
+  const isCompletedRef = useRef(false);
 
   // Memoize URL parameters
   const sessionParams = useMemo(() => ({
@@ -98,12 +99,17 @@ function VoiceCallContent() {
 
       console.log("✅ Session ID set in state:", data.session_id);
 
-      // Speak the greeting
-      setTimeout(() => {
-        console.log("🔊 Speaking greeting message...");
-        speakText(data.assistant_message);
-        setCallState("active");
-      }, 1000);
+      // Speak the greeting immediately (no setTimeout delay)
+      // Call it directly to ensure it's triggered by user action
+      console.log("🔊 Speaking greeting message...");
+      setCallState("active");
+
+      // Small delay to ensure state is set, then speak
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          speakText(data.assistant_message);
+        }, 100);
+      });
 
     } catch (err) {
       console.error("❌ Session start error:", err);
@@ -142,7 +148,7 @@ function VoiceCallContent() {
       setAiSpeaking(false);
 
       // Don't auto-start listening if call should end or is completed
-      if (!completed && !shouldEndCallRef.current) {
+      if (!isCompletedRef.current && !shouldEndCallRef.current) {
         console.log("🎤 Will auto-start listening in 1000ms...");
         // Start listening after AI finishes speaking
         setTimeout(() => {
@@ -354,6 +360,7 @@ function VoiceCallContent() {
         console.log("✅ Booking completed!");
         setCompleted(true);
         setCallState("completed");
+        isCompletedRef.current = true; // Update ref immediately for callbacks
       }
 
       if (data.invoice_url) {
@@ -367,9 +374,10 @@ function VoiceCallContent() {
         speakText(data.assistant_message);
       }, 500);
 
-      // Check if should end call (after booking complete OR goodbye detected)
-      if (data.completed || shouldEndCallRef.current) {
-        console.log("👋 Will end call after AI finishes speaking...");
+      // ONLY auto-redirect if user said goodbye (NOT on booking completion)
+      // When booking completes, user should see invoice and download it
+      if (shouldEndCallRef.current && !data.completed) {
+        console.log("👋 User said goodbye. Will end call after AI finishes speaking...");
         setTimeout(() => {
           console.log("👋 Ending call and navigating to home...");
           if (synthRef.current) {
@@ -383,6 +391,10 @@ function VoiceCallContent() {
           // Navigate to home
           router.push("/");
         }, 5000); // Wait 5 seconds for AI to finish speaking
+      } else if (shouldEndCallRef.current && data.completed) {
+        console.log("✅ Booking complete + goodbye detected. Staying on invoice screen.");
+        // Reset the flag but don't navigate - let user see invoice
+        shouldEndCallRef.current = false;
       }
 
     } catch (err) {
