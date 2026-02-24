@@ -51,36 +51,59 @@ function VoiceCallContent() {
     }
   }, []);
 
+  // Debug: Track sessionId changes
+  useEffect(() => {
+    console.log("🆔 Session ID changed to:", sessionId);
+  }, [sessionId]);
+
   // Start Session
   const startSession = async () => {
-    if (hasStartedSession.current) return;
+    console.log("🚀 Starting session...");
+
+    if (hasStartedSession.current) {
+      console.log("⚠️ Session already started, skipping...");
+      return;
+    }
     hasStartedSession.current = true;
 
     setCallState("connecting");
 
     try {
+      console.log("📤 Calling /session/start with params:", sessionParams);
+
       const res = await fetch("http://localhost:8000/session/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sessionParams),
       });
 
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      console.log("📥 Session start response status:", res.status);
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
 
       const data = await res.json();
+      console.log("✅ Session created successfully:", data);
+      console.log("🆔 Session ID:", data.session_id);
+
       setSessionId(data.session_id);
       setMessages([{ role: "assistant", content: data.assistant_message }]);
 
+      console.log("✅ Session ID set in state:", data.session_id);
+
       // Speak the greeting
       setTimeout(() => {
+        console.log("🔊 Speaking greeting message...");
         speakText(data.assistant_message);
         setCallState("active");
       }, 1000);
 
     } catch (err) {
-      console.error("Session start error:", err);
-      setError("Failed to connect. Please check if the backend is running.");
+      console.error("❌ Session start error:", err);
+      setError(`Failed to connect to backend: ${err}`);
       setCallState("idle");
+      hasStartedSession.current = false; // Allow retry
     }
   };
 
