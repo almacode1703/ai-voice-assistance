@@ -27,37 +27,29 @@ export default function AuthBadge() {
     <div className="fixed top-4 right-4 z-50">
       <motion.button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-lg rounded-xl px-3 py-2 cursor-pointer hover:border-violet-300 transition-all duration-200"
+        className="cursor-pointer"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.97 }}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.93 }}
       >
         {session.user.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={session.user.image}
             alt="avatar"
-            className="w-7 h-7 rounded-lg object-cover"
+            className="w-11 h-11 rounded-full object-cover"
+            style={{ boxShadow: "0 4px 18px rgba(139, 92, 246, 0.45), 0 1px 4px rgba(0,0,0,0.12)" }}
           />
         ) : (
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 via-violet-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold">
+          <div
+            className="w-11 h-11 rounded-full bg-gradient-to-br from-cyan-500 via-violet-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold select-none"
+            style={{ boxShadow: "0 4px 18px rgba(139, 92, 246, 0.45), 0 1px 4px rgba(0,0,0,0.12)" }}
+          >
             {initials}
           </div>
         )}
-        <span className="text-sm font-semibold text-slate-700 max-w-[100px] truncate">
-          {session.user.name?.split(" ")[0] ?? "User"}
-        </span>
-        <motion.span
-          animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-          className="text-slate-400"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </motion.span>
       </motion.button>
 
       <AnimatePresence>
@@ -67,7 +59,7 @@ export default function AuthBadge() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full right-0 mt-2 w-56 bg-white border border-slate-200/80 shadow-xl rounded-xl overflow-hidden"
+            className="absolute top-full right-0 mt-3 w-56 bg-white border border-slate-200/80 shadow-2xl rounded-xl overflow-hidden"
           >
             {/* User info */}
             <div className="px-4 py-3 border-b border-slate-100">
