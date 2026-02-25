@@ -43,6 +43,9 @@ function VoiceCallContent() {
   const lastTranscriptRef = useRef<string>("");
   const shouldEndCallRef = useRef(false);
   const isCompletedRef = useRef(false);
+  // sessionIdRef keeps sessionId always current inside stale closures
+  // (the speak→listen→send chain is created before React re-renders with the new sessionId)
+  const sessionIdRef = useRef<string | null>(null);
 
   // Memoize URL parameters
   const sessionParams = useMemo(() => ({
@@ -95,6 +98,7 @@ function VoiceCallContent() {
       console.log("🆔 Session ID:", data.session_id);
 
       setSessionId(data.session_id);
+      sessionIdRef.current = data.session_id; // sync ref immediately — avoids stale closure in sendMessage
       setMessages([{ role: "assistant", content: data.assistant_message }]);
 
       console.log("✅ Session ID set in state:", data.session_id);
@@ -162,7 +166,11 @@ function VoiceCallContent() {
 
     utterance.onerror = (event) => {
       console.error("❌ Speech synthesis error:", event);
-      alert(`Speech error: ${event.error}`);
+      // "interrupted" and "canceled" are normal browser behaviour (e.g. cancel()
+      // called before the utterance finishes, or Chrome's background-tab policy).
+      // Showing an alert here is what caused the blocking popup — ignore silently.
+      if (event.error === "interrupted" || event.error === "canceled") return;
+      console.error("Speech error details:", event.error);
     };
 
     try {
@@ -171,7 +179,7 @@ function VoiceCallContent() {
       console.log("✅ Speech synthesis started successfully");
     } catch (error) {
       console.error("❌ Failed to start speech:", error);
-      alert(`Failed to speak: ${error}`);
+      // Don't alert — just log and let the UI continue
     }
   };
 
@@ -222,8 +230,9 @@ function VoiceCallContent() {
 
       if (finalTranscript) {
         console.log("✅ Final transcript received, sending immediately:", finalTranscript);
-        // Stop recognition before sending message
-        recognition.stop();
+        // With continuous=false the browser may have already stopped recognition,
+        // so stop() can throw InvalidStateError — catch it so sendMessage always runs.
+        try { recognition.stop(); } catch (_) {}
         sendMessage(finalTranscript);
       } else if (interimTranscript) {
         // Set a timer to auto-send after 2 seconds of no new speech
@@ -231,7 +240,7 @@ function VoiceCallContent() {
         transcriptTimerRef.current = setTimeout(() => {
           console.log("⏰ Timer expired! Auto-sending transcript:", lastTranscriptRef.current);
           if (lastTranscriptRef.current.trim()) {
-            recognition.stop();
+            try { recognition.stop(); } catch (_) {}
             sendMessage(lastTranscriptRef.current);
           }
         }, 2000);
@@ -247,25 +256,25 @@ function VoiceCallContent() {
       } else if (event.error === "no-speech") {
         console.log("⚠️ No speech detected, restarting in 1 second...");
         setTimeout(() => {
-          if (!completed && callState !== "completed") {
+          // Use refs instead of stale closure values
+          if (!isCompletedRef.current && !shouldEndCallRef.current) {
             console.log("🔄 Restarting speech recognition...");
             startListening();
           }
         }, 1000);
       } else if (event.error === "network") {
         console.error("❌ Network error - Speech API unavailable or microphone not working");
-        alert("Cannot connect to speech service or microphone not detected. Please check:\n\n1. Microphone is connected and working\n2. You have internet connection\n3. Browser has microphone permission\n\nTry speaking again or use manual 'Tap to Speak' button.");
         setCallState("active");
-        // Auto-retry after 2 seconds
+        // Auto-retry after 2 seconds using refs to avoid stale closure
         setTimeout(() => {
-          if (!completed && callState !== "completed") {
+          if (!isCompletedRef.current) {
             console.log("🔄 Retrying speech recognition...");
             startListening();
           }
         }, 2000);
       } else {
         console.error(`❌ Speech recognition error: ${event.error}`);
-        alert(`Speech recognition error: ${event.error}\n\nPlease try the manual "Tap to Speak" button.`);
+        // Don't alert — just restore active state so the "Tap to Speak" button reappears
         setCallState("active");
       }
     };
@@ -283,7 +292,8 @@ function VoiceCallContent() {
       recognition.start();
     } catch (error) {
       console.error("❌ Failed to start recognition:", error);
-      alert("Failed to start microphone. Please check permissions.");
+      // Restore active state so "Tap to Speak" reappears instead of blocking with alert
+      setCallState("active");
     }
   };
 
@@ -313,7 +323,7 @@ function VoiceCallContent() {
   const sendMessage = async (transcript: string) => {
     console.log("📤 Sending message to backend:", transcript);
 
-    if (!sessionId) {
+    if (!sessionIdRef.current) {
       console.error("❌ No session ID!");
       return;
     }
@@ -342,7 +352,7 @@ function VoiceCallContent() {
       const res = await fetch("http://localhost:8000/session/message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, message: transcript }),
+        body: JSON.stringify({ session_id: sessionIdRef.current, message: transcript }),
       });
 
       console.log("📥 Response status:", res.status);
@@ -399,7 +409,7 @@ function VoiceCallContent() {
 
     } catch (err) {
       console.error("❌ Send message error:", err);
-      alert(`Error communicating with backend: ${err}`);
+      setError(`Failed to communicate with backend: ${err}`);
       setCallState("active");
     }
   };
