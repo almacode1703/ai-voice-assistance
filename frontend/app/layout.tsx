@@ -1,5 +1,7 @@
 import "./globals.css";
 import { Kumbh_Sans } from "next/font/google";
+import Providers from "./providers";
+import AuthBadge from "./components/AuthBadge";
 
 const kumbhSans = Kumbh_Sans({
   subsets: ["latin"],
@@ -19,8 +21,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={kumbhSans.variable}>
-      <body className={`${kumbhSans.className} bg-[#0B0F19] text-white antialiased min-h-screen`}>
-        {children}
+      <body className={`${kumbhSans.className} antialiased min-h-screen`}>
+        <Providers>
+          <AuthBadge />
+          {children}
+        </Providers>
       </body>
     </html>
   );

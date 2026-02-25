@@ -8,6 +8,7 @@ import json
 import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
+from auth import router as auth_router
 
 # PDF
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -28,6 +29,8 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # FastAPI App
 # --------------------------------------------------
 app = FastAPI()
+
+app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,

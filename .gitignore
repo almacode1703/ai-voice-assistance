@@ -39,6 +39,7 @@ venv/
 # Backend generated files
 backend/*.log
 backend/invoices/
+backend/data/
 
 # ========================
 # OS / Editor
