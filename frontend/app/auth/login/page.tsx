@@ -44,7 +44,7 @@ export default function LoginPage() {
 
       {/* ── Right: form panel ── */}
       <motion.div
-        className="flex-1 flex items-center justify-center px-6 py-4 relative overflow-y-auto h-screen"
+        className="flex-1 flex flex-col px-6 py-8 relative overflow-y-auto h-screen"
         animate={{
           backgroundColor: [
             "rgba(6,182,212,0.06)",
@@ -71,7 +71,7 @@ export default function LoginPage() {
 
         {/* Form card */}
         <motion.div
-          className="relative z-10 w-full max-w-[420px]"
+          className="relative z-10 w-full max-w-[420px] mx-auto my-auto"
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease: "easeOut" }}

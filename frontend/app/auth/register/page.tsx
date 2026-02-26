@@ -76,7 +76,7 @@ export default function RegisterPage() {
 
       {/* ── Right: form panel ── */}
       <motion.div
-        className="flex-1 flex items-center justify-center px-6 py-3 relative overflow-y-auto h-screen"
+        className="flex-1 flex flex-col px-6 py-6 relative overflow-y-auto h-screen"
         animate={{
           backgroundColor: [
             "rgba(139,92,246,0.07)",
@@ -103,7 +103,7 @@ export default function RegisterPage() {
 
         {/* Form card */}
         <motion.div
-          className="relative z-10 w-full max-w-[420px]"
+          className="relative z-10 w-full max-w-[420px] mx-auto my-auto"
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease: "easeOut" }}
