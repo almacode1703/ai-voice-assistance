@@ -149,7 +149,7 @@ export function AuthLeftPanel() {
       />
 
       {/* ── Main content ── */}
-      <div className="relative z-10 flex flex-col items-center text-center w-full">
+      <div className="relative z-10 flex flex-col items-center text-center w-full mt-4">
 
         {/* Live badge */}
         <motion.div
