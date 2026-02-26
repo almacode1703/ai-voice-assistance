@@ -103,6 +103,9 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
 # Email Sender
 # --------------------------------------------------
 def send_otp_email(to_email: str, name: str, otp: str):
+    # Re-read .env on every call so credentials are always fresh
+    from dotenv import load_dotenv
+    load_dotenv(override=True)
     gmail_user = os.getenv("GMAIL_USER")
     gmail_password = os.getenv("GMAIL_APP_PASSWORD")
 
