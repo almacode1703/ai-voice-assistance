@@ -87,9 +87,16 @@ export default function LoginPage() {
               {/* Logo + nav */}
               <div className="flex items-center gap-3 mb-8">
                 <motion.div
-                  className="bg-gradient-to-br from-cyan-500 via-pink-500 to-yellow-400 p-3 rounded-xl shadow-md"
-                  whileHover={{ rotate: 8, scale: 1.05 }}
-                  transition={{ type: "spring", stiffness: 300 }}
+                  className="bg-gradient-to-br from-cyan-500 via-pink-500 to-yellow-400 p-3 shadow-md"
+                  animate={{
+                    rotate: [0, 360],
+                    borderRadius: ["12px", "50%", "50%", "12px"],
+                  }}
+                  transition={{
+                    rotate: { duration: 4, repeat: Infinity, ease: "linear" },
+                    borderRadius: { duration: 2.5, repeat: Infinity, ease: "easeInOut", repeatType: "reverse" },
+                  }}
+                  whileHover={{ scale: 1.1 }}
                 >
                   <SparklesIcon className="w-6 h-6 text-white" />
                 </motion.div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   SparklesIcon,
@@ -10,6 +11,7 @@ import {
   HandThumbUpIcon,
   ChatBubbleLeftRightIcon,
   ArrowPathIcon,
+  HomeIcon,
 } from "@heroicons/react/24/solid";
 
 interface FeedbackResult {
@@ -21,6 +23,7 @@ interface FeedbackResult {
 }
 
 export default function FeedbackPage() {
+  const router = useRouter();
   const [text, setText] = useState("");
   const [result, setResult] = useState<FeedbackResult | null>(null);
   const [loadingRewrite, setLoadingRewrite] = useState(false);
@@ -106,6 +109,23 @@ export default function FeedbackPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-6 py-12 relative overflow-hidden">
+      {/* Home Button */}
+      <div className="absolute top-6 left-6 z-20">
+        <motion.button
+          onClick={() => router.push("/")}
+          className="group relative w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-500 cursor-pointer"
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          whileTap={{ scale: 0.95 }}
+          title="Go to Home"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <HomeIcon className="w-6 h-6 text-white relative z-10" />
+        </motion.button>
+      </div>
+
       {/* Animated Background Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
