@@ -71,7 +71,7 @@ function CallPageContent() {
       try {
         console.log("Starting session with:", sessionParams);
 
-        const res = await fetch("http://localhost:8000/session/start", {
+        const res = await fetch("http://localhost:8001/session/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(sessionParams),
@@ -117,7 +117,7 @@ function CallPageContent() {
     setIsTyping(true);
 
     try {
-      const res = await fetch("http://localhost:8000/session/message", {
+      const res = await fetch("http://localhost:8001/session/message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionId, message: userMessage }),

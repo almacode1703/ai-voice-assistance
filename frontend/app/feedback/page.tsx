@@ -35,7 +35,7 @@ export default function FeedbackPage() {
     setLoadingSubmit(true);
 
     try {
-      const res = await fetch("http://localhost:8000/feedback", {
+      const res = await fetch("http://localhost:8001/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
@@ -56,7 +56,7 @@ export default function FeedbackPage() {
     setLoadingRewrite(true);
 
     try {
-      const res = await fetch("http://localhost:8000/feedback/rewrite", {
+      const res = await fetch("http://localhost:8001/feedback/rewrite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),

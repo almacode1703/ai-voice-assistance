@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SparklesIcon, EyeIcon, EyeSlashIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
 import { AuthLeftPanel } from "../../components/AuthLeftPanel";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001";
 
 export default function RegisterPage() {
   const router = useRouter();

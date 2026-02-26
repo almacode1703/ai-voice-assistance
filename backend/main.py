@@ -574,7 +574,7 @@ JSON: {{"reply": "...", "completed": true, "appointment_date": "2026-03-02", "ap
     if parsed.get("completed") and not session["invoice_generated"]:
 
         invoice_path = generate_invoice(data.session_id, session)
-        session["invoice_url"] = f"http://localhost:8000/{invoice_path}"
+        session["invoice_url"] = f"http://localhost:8001/{invoice_path}"
         session["invoice_generated"] = True
 
     return {

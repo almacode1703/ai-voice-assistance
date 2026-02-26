@@ -81,7 +81,7 @@ function VoiceCallContent() {
     try {
       console.log("📤 Calling /session/start with params:", sessionParams);
 
-      const res = await fetch("http://localhost:8000/session/start", {
+      const res = await fetch("http://localhost:8001/session/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sessionParams),
@@ -349,7 +349,7 @@ function VoiceCallContent() {
       console.log("Session ID:", sessionId);
       console.log("Message:", transcript);
 
-      const res = await fetch("http://localhost:8000/session/message", {
+      const res = await fetch("http://localhost:8001/session/message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionIdRef.current, message: transcript }),
